@@ -2,6 +2,7 @@ package functzinc
 
 import (
 	"bytes"
+	"encoding/json"
 	"encoging/json"
 	"fmt"
 	"io/ioutil"
@@ -45,7 +46,7 @@ func recursively(nameDir string, curtPath string) {
 	}
 
 	if len(listFiles) >= 1 {
-		To_ndjson(listFiles, curtPath)
+		createJsno(listFiles, curtPath)
 	}
 
 	for _, dir := range listDirs {
@@ -57,6 +58,7 @@ func recursively(nameDir string, curtPath string) {
 	}
 }
 
+// It opens a file, writes to it, and closes it
 func writeFile(dict1 []byte, dict2 []byte) {
 	if _, err := os.Stat(os.Getenv("nameDb") + ".ndjson");
 	err == nil {
@@ -72,9 +74,73 @@ func writeFile(dict1 []byte, dict2 []byte) {
 		HandleErr(err)
 
 		defer f.Close()
+
+	} else {
+		f, err := os.Create(os.Getenv("nameDb") + ".ndjson")
+		HandleErr(err)
+		str := string(dict1)
+		_, err = fmt.Fprint(f, str, "\n")
+		HandleErr(err)
+		str2 := string(dict2)
+		_, err = fmt.Fprint(f, str2, "\n")
+		HandleErr(err)
+
+		defer f.Close()
 	}
 }
 
-func To_ndjson(namesFiles []string, path string) {
-	
+// It takes a list of files, and a path, and then it creates a json file with the content of all the
+// files
+func createJsno(namesFiles []string, path string) {
+	splitIndex := strings.Split(path, "/")
+
+	var nameIndex string
+
+	if len(splitIndex) >= 2 {
+		nameIndex1 := splitIndex[len(splitIndex)-2]
+		nameIndex1 = strings.TrimPrefix(nameIndex1, "_")
+		nameIndex = nameIndex1 + "." + splitIndex[len(splitIndex)-1]
+	} else {
+		nameIndex = splitIndex[len(splitIndex)-1]
+		nameIndex = strings.TrimPrefix(nameIndex, "_")
+	}
+
+	var cont int64 = 0
+
+	for _, nameFile := range namesFiles {
+		myFile, err := os.Stat(path + "/" + nameFile)
+		if err != nil {
+			fmt.Println("File not exist")
+		}
+		cont += myFile.Size()
+	}
+
+
+	dict1 := map[string]map[string]string{
+		"index": {
+			"_index": os.Getenv("nameDb"),
+		},
+	}
+
+	toJson, err := json.Marshal(dict1)
+	HandleErr(err)
+
+	dict2 := make(map[string]string)
+
+	for _, name := range namesFiles {
+
+		content, err := ioutil.ReadFile(path + "/" + name)
+		HandleErr(err)
+
+		strContent := string(content)
+
+		dict2[nameIndex+"."+name] = strContent
+	}
+
+	toJson2, err := json.Marshal(dict2)
+	HandleErr(err)
+
+	writeFile(toJson, toJson2)
 }
+
+

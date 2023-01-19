@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"https://github.com/Wharem85/indexer-Go/tree/main/Indexer/funcZincSearch"
 )
 
 func main() {
